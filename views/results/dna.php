@@ -1,53 +1,102 @@
 <?php
-
 declare(strict_types=1);
 
 /** @var array $dna */
-$skills = $dna['skills_matrix'] ?? [];
+$skills   = $dna['skills_matrix'] ?? [];
+$score    = (int) round((float)($dna['dna_score'] ?? 0));
+
+// Map score to level label
+$level = match(true) {
+    $score >= 80 => ['label' => 'متقدم', 'color' => 'text-success', 'badge' => 'badge-success'],
+    $score >= 55 => ['label' => 'متوسط', 'color' => 'text-warning', 'badge' => 'badge-warning'],
+    $score >= 30 => ['label' => 'مبتدئ', 'color' => 'text-info',    'badge' => 'badge-info'],
+    default      => ['label' => 'مستجد',  'color' => 'text-base-content/50', 'badge' => 'badge-ghost'],
+};
 ?>
-<div class="card bg-base-100 shadow-xl border-t-4 border-primary">
-  <div class="card-body">
-    <h2 class="card-title text-2xl">DNA التوأم المهني</h2>
-    <div class="mt-3">
-      <div class="flex items-center justify-between">
-        <span class="text-sm opacity-70">Score</span>
-        <span class="font-bold"><?= htmlspecialchars((string)($dna['dna_score'] ?? 0)) ?></span>
+
+<!-- ── DNA Hero ── -->
+<div class="card bg-base-100 shadow-lg border border-base-200">
+  <div class="card-body p-6 lg:p-8">
+
+    <div class="flex flex-col sm:flex-row items-center gap-6 mb-8">
+      <!-- Radial progress ring -->
+      <div class="relative shrink-0">
+        <div class="radial-progress text-primary font-bold text-2xl"
+             style="--value:<?= $score ?>; --size:9rem; --thickness:0.5rem"
+             role="progressbar"
+             aria-valuenow="<?= $score ?>"
+             aria-valuemin="0"
+             aria-valuemax="100">
+          <?= $score ?>%
+        </div>
       </div>
-      <div class="radial-progress text-primary" style="--value:<?= (int)round((float)($dna['dna_score'] ?? 0)); ?>; --size:8rem; --thickness:0.35rem" role="progressbar">
-        <?= (int)round((float)($dna['dna_score'] ?? 0)); ?>%
+
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <h2 class="text-2xl font-bold">DNA المهني</h2>
+          <span class="badge <?= $level['badge'] ?>"><?= $level['label'] ?></span>
+        </div>
+        <p class="text-base-content/50 text-sm leading-relaxed max-w-sm">
+          يعكس هذا الرسم مستوى تطابق مهاراتك مع أعلى مسار مهني تناسبك.
+          كلما ارتفع الرقم كلما كانت توصياتنا أكثر دقة.
+        </p>
+        <?php if ($score === 0): ?>
+          <div class="alert alert-info mt-3 py-2 text-sm">
+            أكمل الاختبار أولاً لتظهر نتائج الـ DNA.
+          </div>
+        <?php endif; ?>
       </div>
     </div>
 
-    <div class="mt-6">
-      <h3 class="font-semibold mb-2">محاور المهارات (Skills Matrix)</h3>
-      <div class="overflow-x-auto">
-        <table class="table w-full">
-          <thead>
-            <tr>
-              <th>المهارة</th>
-              <th>المستوى</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php if (empty($skills)): ?>
-              <tr><td colspan="2" class="text-center opacity-70">لا توجد بيانات DNA بعد</td></tr>
-            <?php else: ?>
-              <?php foreach ($skills as $skill => $level): ?>
-                <?php if (str_starts_with((string)$skill, '_')) continue; ?>
-                <tr>
-                  <td><?= htmlspecialchars((string)$skill) ?></td>
-                  <td>
-                    <progress class="progress progress-success w-56" value="<?= (int)$level ?>" max="100"></progress>
-                    <span class="ml-2 font-semibold"><?= (int)$level ?></span>
-                  </td>
-                </tr>
-              <?php endforeach; ?>
-            <?php endif; ?>
-          </tbody>
-        </table>
-      </div>
+    <?php if (!empty($skills)): ?>
+    <!-- ── Skills bars ── -->
+    <h3 class="font-semibold text-base mb-4 flex items-center gap-2">
+      <span class="text-lg">🧬</span> محاور المهارات
+    </h3>
+    <div class="space-y-4">
+      <?php foreach ($skills as $skill => $lvl): ?>
+        <?php if (str_starts_with((string)$skill, '_')) continue; ?>
+        <?php
+          $pct = min(100, max(0, (int)$lvl));
+          $barColor = match(true) {
+              $pct >= 75 => 'progress-success',
+              $pct >= 45 => 'progress-primary',
+              $pct >= 20 => 'progress-warning',
+              default    => 'progress-error',
+          };
+          $skillLabel = match($skill) {
+              'php'         => 'PHP',
+              'javascript'  => 'JavaScript',
+              'python'      => 'Python',
+              'databases'   => 'قواعد البيانات',
+              'css'         => 'CSS',
+              'react'       => 'React',
+              'devops'      => 'DevOps',
+              'leadership'  => 'القيادة',
+              'architecture'=> 'هندسة البرمجيات',
+              'mobile'      => 'تطوير الجوال',
+              'design'      => 'التصميم',
+              'data'        => 'تحليل البيانات',
+              default       => $skill,
+          };
+        ?>
+        <div>
+          <div class="flex justify-between text-sm mb-1">
+            <span class="font-medium"><?= htmlspecialchars($skillLabel) ?></span>
+            <span class="text-base-content/50"><?= $pct ?> / 100</span>
+          </div>
+          <progress class="progress <?= $barColor ?> w-full h-3 bar-anim"
+                    value="<?= $pct ?>"
+                    max="100"></progress>
+        </div>
+      <?php endforeach; ?>
     </div>
+    <?php else: ?>
+    <div class="text-center py-8 text-base-content/40">
+      <div class="text-4xl mb-3">🧬</div>
+      <p class="text-sm">لا توجد بيانات مهارات بعد — أكمل الاختبار أولاً.</p>
+    </div>
+    <?php endif; ?>
 
   </div>
 </div>
-
