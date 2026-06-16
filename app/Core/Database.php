@@ -17,10 +17,10 @@ final class Database
             return self::$instance;
         }
 
-        $host = 'localhost';
-        $db = 'basira_ai';
-        $user = 'root';
-        $pass = '';
+        $host = \App\Core\Env::get('DB_HOST', 'localhost');
+        $db   = \App\Core\Env::get('DB_NAME', 'basira_ai');
+        $user = \App\Core\Env::get('DB_USER', 'root');
+        $pass = \App\Core\Env::get('DB_PASS', '');
 
         $dsn = "mysql:host={$host};dbname={$db};charset=utf8mb4";
 

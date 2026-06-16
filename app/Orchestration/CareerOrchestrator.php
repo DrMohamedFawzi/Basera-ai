@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Orchestration;
 
-use App\Repositories\CareerRepository;
+use App\Repositories\CareerRepositoryInterface;
 use App\Services\CareerMatchingEngine;
 use App\Services\CareerRoadmapEngine;
 
@@ -16,7 +16,7 @@ use App\Services\CareerRoadmapEngine;
 final class CareerOrchestrator
 {
     public function __construct(
-        private readonly CareerRepository $careerRepository,
+        private readonly CareerRepositoryInterface $careerRepository,
         private readonly CareerMatchingEngine $matchingEngine,
         private readonly CareerRoadmapEngine $roadmapEngine,
     ) {

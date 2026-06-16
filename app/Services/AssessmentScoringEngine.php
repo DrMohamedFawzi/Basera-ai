@@ -15,16 +15,6 @@ final class AssessmentScoringEngine
     ) {
     }
 
-    /**
-     * يحدد إن كان جدول career_dna موجوداً.
-     */
-    private function hasCareerDnaTable(): bool
-    {
-        $stmt = $this->db->query("SHOW TABLES LIKE 'career_dna'");
-        return (bool)($stmt->fetch());
-    }
-
-
     public static function createDefault(): self
     {
         return new self(Database::getConnection(), new CareerDNAEngine());
@@ -62,28 +52,15 @@ final class AssessmentScoringEngine
 
         $overall = $this->dnaEngine->calculateOverallDnaScore($skillsMatrix);
 
-        // إذا كانت career_dna موجودة استخدمها، وإلا استخدم الجدول القديم career_twins
-        if ($this->hasCareerDnaTable()) {
-            $upsert = $this->db->prepare(
-                "
-                INSERT INTO career_dna (user_id, skills_matrix, dna_score)
-                VALUES (:user_id, :skills_matrix, :dna_score)
-                ON DUPLICATE KEY UPDATE
-                  skills_matrix = VALUES(skills_matrix),
-                  dna_score = VALUES(dna_score)
-                "
-            );
-        } else {
-            $upsert = $this->db->prepare(
-                "
-                INSERT INTO career_twins (user_id, skills_matrix, dna_score)
-                VALUES (:user_id, :skills_matrix, :dna_score)
-                ON DUPLICATE KEY UPDATE
-                  skills_matrix = VALUES(skills_matrix),
-                  dna_score = VALUES(dna_score)
-                "
-            );
-        }
+        $upsert = $this->db->prepare(
+            "
+            INSERT INTO career_twins (user_id, skills_matrix, dna_score)
+            VALUES (:user_id, :skills_matrix, :dna_score)
+            ON DUPLICATE KEY UPDATE
+              skills_matrix = VALUES(skills_matrix),
+              dna_score = VALUES(dna_score)
+            "
+        );
 
         $upsert->execute([
             'user_id' => $userId,

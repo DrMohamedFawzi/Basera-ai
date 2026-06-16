@@ -1,0 +1,20 @@
+# Dependencies
+/vendor/
+/node_modules/
+
+# Environment
+.env
+
+# PHP/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.DS_Store
+
+# Logs
+*.log
+/logs/
+
+# Vendor is not committed (install with: composer install)
+/vendor/

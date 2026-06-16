@@ -9,6 +9,51 @@ use App\Services\AssessmentScoringEngine;
 
 final class AssessmentController
 {
+    /**
+     * GET or create an in-progress assessment for the user.
+     * Returns JSON: { assessment_id: int, total_questions: int, answered_count: int }
+     */
+    public function start(int $userId): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($userId <= 0) {
+            http_response_code(422);
+            echo json_encode(['error' => 'Invalid user_id'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $db = Database::getConnection();
+
+        // Resume existing in-progress assessment if any
+        $stmt = $db->prepare(
+            "SELECT id FROM user_assessments WHERE user_id = :user_id AND status = 'in_progress' LIMIT 1"
+        );
+        $stmt->execute(['user_id' => $userId]);
+        $existing = $stmt->fetch();
+
+        if ($existing) {
+            $assessmentId = (int)$existing['id'];
+        } else {
+            $stmt = $db->prepare(
+                "INSERT INTO user_assessments (user_id, status, current_step) VALUES (:user_id, 'in_progress', 1)"
+            );
+            $stmt->execute(['user_id' => $userId]);
+            $assessmentId = (int)$db->lastInsertId();
+        }
+
+        $totals = $this->getQuestionCounts($db, $assessmentId);
+
+        echo json_encode([
+            'assessment_id'  => $assessmentId,
+            'total_questions' => $totals['total'],
+            'answered_count'  => $totals['answered'],
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Save a single answer. Body: { assessment_id, question_id, option_id }
+     */
     public function saveResponse(): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -21,35 +66,107 @@ final class AssessmentController
         }
 
         $assessmentId = (int)($payload['assessment_id'] ?? 0);
-        $questionId = (int)($payload['question_id'] ?? 0);
-        $optionId = (int)($payload['option_id'] ?? 0);
+        $questionId   = (int)($payload['question_id'] ?? 0);
+        $optionId     = (int)($payload['option_id'] ?? 0);
 
         if ($assessmentId <= 0 || $questionId <= 0 || $optionId <= 0) {
             http_response_code(422);
-            echo json_encode(['error' => 'assessment_id, question_id, option_id are required'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(
+                ['error' => 'assessment_id, question_id, option_id are required'],
+                JSON_UNESCAPED_UNICODE
+            );
             return;
         }
 
         $db = Database::getConnection();
 
-        // upsert: لكل سؤال إجابة واحدة ضمن نفس assessment
         $stmt = $db->prepare(
-            "
-            INSERT INTO user_responses (assessment_id, question_id, option_id)
-            VALUES (:assessment_id, :question_id, :option_id)
-            ON DUPLICATE KEY UPDATE option_id = VALUES(option_id)
-            "
+            "INSERT INTO user_responses (assessment_id, question_id, option_id)
+             VALUES (:assessment_id, :question_id, :option_id)
+             ON DUPLICATE KEY UPDATE option_id = VALUES(option_id)"
         );
-
         $stmt->execute([
             'assessment_id' => $assessmentId,
-            'question_id' => $questionId,
-            'option_id' => $optionId,
+            'question_id'   => $questionId,
+            'option_id'     => $optionId,
         ]);
 
-        echo json_encode(['status' => 'saved'], JSON_UNESCAPED_UNICODE);
+        $totals = $this->getQuestionCounts($db, $assessmentId);
+
+        echo json_encode([
+            'status'          => 'saved',
+            'total_questions' => $totals['total'],
+            'answered_count'  => $totals['answered'],
+        ], JSON_UNESCAPED_UNICODE);
     }
 
+    /**
+     * Returns the next unanswered question for this assessment.
+     * GET param: assessment_id
+     */
+    public function getNextQuestion(int $assessmentId): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($assessmentId <= 0) {
+            http_response_code(422);
+            echo json_encode(['error' => 'assessment_id is required'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $db = Database::getConnection();
+
+        $stmt = $db->prepare(
+            "SELECT q.id, q.question_text, q.order_num, q.category_id,
+                    c.name_ar AS category_name
+             FROM questions q
+             JOIN assessment_categories c ON c.id = q.category_id
+             WHERE q.id NOT IN (
+                 SELECT question_id FROM user_responses WHERE assessment_id = :assessment_id
+             )
+             ORDER BY q.category_id ASC, q.order_num ASC, q.id ASC
+             LIMIT 1"
+        );
+        $stmt->execute(['assessment_id' => $assessmentId]);
+        $q = $stmt->fetch();
+
+        if (!$q) {
+            $totals = $this->getQuestionCounts($db, $assessmentId);
+            echo json_encode([
+                'question'       => null,
+                'total_questions' => $totals['total'],
+                'answered_count'  => $totals['answered'],
+            ], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $optStmt = $db->prepare(
+            "SELECT id, option_text FROM question_options
+             WHERE question_id = :question_id ORDER BY id ASC"
+        );
+        $optStmt->execute(['question_id' => (int)$q['id']]);
+        $options = $optStmt->fetchAll();
+
+        $totals = $this->getQuestionCounts($db, $assessmentId);
+
+        echo json_encode([
+            'question' => [
+                'id'            => (int)$q['id'],
+                'text'          => $q['question_text'],
+                'category_name' => $q['category_name'],
+                'options'       => array_map(static fn($r) => [
+                    'id'   => (int)$r['id'],
+                    'text' => $r['option_text'],
+                ], $options),
+            ],
+            'total_questions' => $totals['total'],
+            'answered_count'  => $totals['answered'],
+        ], JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Finalize the assessment and trigger DNA calculation.
+     */
     public function finalize(int $assessmentId, int $userId): void
     {
         header('Content-Type: application/json; charset=utf-8');
@@ -60,77 +177,31 @@ final class AssessmentController
             return;
         }
 
-        // حساب snapshot وإدخاله في career_twins
-        $engine = AssessmentScoringEngine::createDefault();
+        $engine   = AssessmentScoringEngine::createDefault();
         $snapshot = $engine->process($assessmentId, $userId);
 
         $db = Database::getConnection();
-        $stmt = $db->prepare(
-            "
-            UPDATE user_assessments
-            SET status='completed', completed_at=NOW()
-            WHERE id=:id
-            "
-        );
-        $stmt->execute(['id' => $assessmentId]);
+        $db->prepare(
+            "UPDATE user_assessments SET status='completed', completed_at=NOW() WHERE id=:id"
+        )->execute(['id' => $assessmentId]);
 
         echo json_encode([
-            'status' => 'completed',
+            'status'       => 'completed',
             'dna_snapshot' => $snapshot,
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    /**
-     * واجهة جاهزة لإظهار سؤال واحد (للتجربة).
-     */
-    public function getNextQuestion(int $categoryId): void
+    private function getQuestionCounts(\PDO $db, int $assessmentId): array
     {
-        header('Content-Type: application/json; charset=utf-8');
+        $totalStmt = $db->query('SELECT COUNT(*) FROM questions');
+        $total     = (int)$totalStmt->fetchColumn();
 
-        $db = Database::getConnection();
-
-        $stmt = $db->prepare(
-            "
-            SELECT q.id, q.question_text, q.order_num
-            FROM questions q
-            WHERE q.category_id = :category_id
-            ORDER BY q.order_num ASC, q.id ASC
-            LIMIT 1
-            "
+        $answeredStmt = $db->prepare(
+            'SELECT COUNT(*) FROM user_responses WHERE assessment_id = :assessment_id'
         );
-        $stmt->execute(['category_id' => $categoryId]);
-        $q = $stmt->fetch();
+        $answeredStmt->execute(['assessment_id' => $assessmentId]);
+        $answered = (int)$answeredStmt->fetchColumn();
 
-        if (!$q) {
-            echo json_encode(['question' => null], JSON_UNESCAPED_UNICODE);
-            return;
-        }
-
-        $optStmt = $db->prepare(
-            "
-            SELECT id, option_text, skill_key, score_value
-            FROM question_options
-            WHERE question_id = :question_id
-            ORDER BY id ASC
-            "
-        );
-        $optStmt->execute(['question_id' => (int)$q['id']]);
-        $options = $optStmt->fetchAll();
-
-        echo json_encode([
-            'question' => [
-                'id' => (int)$q['id'],
-                'text' => $q['question_text'],
-                'options' => array_map(static function ($row) {
-                    return [
-                        'id' => (int)$row['id'],
-                        'text' => $row['option_text'],
-                        'skill_key' => $row['skill_key'],
-                        'score_value' => (int)$row['score_value'],
-                    ];
-                }, $options)
-            ]
-        ], JSON_UNESCAPED_UNICODE);
+        return ['total' => $total, 'answered' => $answered];
     }
 }
-

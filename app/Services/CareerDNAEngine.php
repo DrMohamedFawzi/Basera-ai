@@ -19,10 +19,10 @@ class CareerDNAEngine
         return round(($total / ($count * self::MAX_SKILL_SCORE)) * 100, 2);
     }
 
-    public function updateSkillLevelInMatrix(array $currentMatrix, int $skillId, int $pointsGain): array
+    public function updateSkillLevelInMatrix(array $currentMatrix, string $skillKey, int $pointsGain): array
     {
-        $current = $currentMatrix[$skillId] ?? 0;
-        $currentMatrix[$skillId] = min(self::MAX_SKILL_SCORE, $current + $pointsGain);
+        $current = $currentMatrix[$skillKey] ?? 0;
+        $currentMatrix[$skillKey] = min(self::MAX_SKILL_SCORE, $current + $pointsGain);
         return $currentMatrix;
     }
 

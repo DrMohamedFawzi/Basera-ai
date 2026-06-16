@@ -7,16 +7,7 @@ namespace App\Repositories;
 use App\Core\Database;
 use PDO;
 
-/**
- * CareerRepository
- *
- * مستودع مبدئي لإدارة:
- * - جلب بيانات مستخدم
- * - حفظ DNA
- * - حفظ Matching نتائج
- * - حفظ Roadmaps
- */
-final class CareerRepository
+final class CareerRepository implements CareerRepositoryInterface
 {
     private PDO $db;
 
@@ -25,9 +16,6 @@ final class CareerRepository
         $this->db = $db ?? Database::getConnection();
     }
 
-    /**
-     * @return array|null (مصفوفة raw user data)
-     */
     public function getUserById(int $userId): ?array
     {
         $stmt = $this->db->prepare('SELECT id, name, email FROM users WHERE id = :id LIMIT 1');
@@ -36,116 +24,125 @@ final class CareerRepository
         return $row ?: null;
     }
 
-    /**
-     * حفظ/تحديث Career DNA snapshot.
-     *
-     * @param array $dnaSnapshot
-     */
+    // ── DNA ──────────────────────────────────────────────────────────────────
+
     public function saveCareerDNA(int $userId, array $dnaSnapshot): void
     {
-        $skillsMatrix = $dnaSnapshot['skills_matrix'] ?? [];
-        $dnaScore = (float)($dnaSnapshot['dna_score'] ?? 0);
-
         $stmt = $this->db->prepare(
-            "
-            INSERT INTO career_twins (user_id, skills_matrix, dna_score)
-            VALUES (:user_id, :skills_matrix, :dna_score)
-            ON DUPLICATE KEY UPDATE
-              skills_matrix = VALUES(skills_matrix),
-              dna_score = VALUES(dna_score)
-            "
+            "INSERT INTO career_twins (user_id, skills_matrix, dna_score)
+             VALUES (:user_id, :skills_matrix, :dna_score)
+             ON DUPLICATE KEY UPDATE
+               skills_matrix = VALUES(skills_matrix),
+               dna_score     = VALUES(dna_score)"
         );
 
         $stmt->execute([
-            'user_id' => $userId,
-            'skills_matrix' => json_encode($skillsMatrix, JSON_UNESCAPED_UNICODE),
-            'dna_score' => $dnaScore,
+            'user_id'      => $userId,
+            'skills_matrix' => json_encode($dnaSnapshot['skills_matrix'] ?? [], JSON_UNESCAPED_UNICODE),
+            'dna_score'    => (float)($dnaSnapshot['dna_score'] ?? 0),
         ]);
     }
 
-    /**
-     * @return array|null DNA snapshot
-     */
     public function getCareerDNA(int $userId): ?array
     {
-        $stmt = $this->db->prepare('SELECT skills_matrix, dna_score FROM career_twins WHERE user_id = :user_id LIMIT 1');
+        $stmt = $this->db->prepare(
+            'SELECT skills_matrix, dna_score FROM career_twins WHERE user_id = :user_id LIMIT 1'
+        );
         $stmt->execute(['user_id' => $userId]);
         $row = $stmt->fetch();
+
         if (!$row) {
             return null;
         }
 
-        $skillsMatrix = json_decode((string)$row['skills_matrix'], true);
-        if (!is_array($skillsMatrix)) {
-            $skillsMatrix = [];
-        }
+        $matrix = json_decode((string)$row['skills_matrix'], true);
 
         return [
-            'skills_matrix' => $skillsMatrix,
-            'dna_score' => (float)$row['dna_score'],
+            'skills_matrix' => is_array($matrix) ? $matrix : [],
+            'dna_score'     => (float)$row['dna_score'],
         ];
     }
 
-    /**
-     * حفظ Matching النتائج (prototype: تخزين JSON داخل career_twins عبر حقل مؤقت مستقبلاً).
-     *
-     * بما أننا لم ننشئ جداول matching/roadmaps بعد حسب تعليماتك، سنخزنها حالياً
-     * داخل سجل DNA عبر تحديث skills_matrix كـ extension غير مُثالي.
-     *
-     * في المرحلة التالية سننشئ career_matches/roadmaps tables.
-     */
+    // ── Matches ───────────────────────────────────────────────────────────────
+
     public function saveMatchingResults(int $userId, array $matches): void
     {
-        $dna = $this->getCareerDNA($userId);
-        if (!$dna) {
-            // لو لا يوجد dna لا نستطيع حفظ matching
-            return;
-        }
-
-        $skillsMatrix = $dna['skills_matrix'];
-        // إضافة مفتاح خاص (prototype)
-        $skillsMatrix['_matches_prototype'] = $matches;
-
         $stmt = $this->db->prepare(
-            "
-            UPDATE career_twins
-            SET skills_matrix = :skills_matrix
-            WHERE user_id = :user_id
-            "
+            "INSERT INTO career_matches (user_id, career_slug, score)
+             VALUES (:user_id, :career_slug, :score)
+             ON DUPLICATE KEY UPDATE score = VALUES(score)"
         );
 
-        $stmt->execute([
-            'skills_matrix' => json_encode($skillsMatrix, JSON_UNESCAPED_UNICODE),
-            'user_id' => $userId,
-        ]);
+        foreach ($matches as $match) {
+            $slug = $match['slug'] ?? $this->slugify((string)($match['career'] ?? ''));
+            $stmt->execute([
+                'user_id'     => $userId,
+                'career_slug' => $slug,
+                'score'       => (int)($match['score'] ?? 0),
+            ]);
+        }
     }
 
-    /**
-     * @param array $roadmap
-     */
+    public function getMatchingResults(int $userId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT career_slug, score FROM career_matches WHERE user_id = :user_id ORDER BY score DESC'
+        );
+        $stmt->execute(['user_id' => $userId]);
+        return $stmt->fetchAll() ?: [];
+    }
+
+    // ── Roadmap ───────────────────────────────────────────────────────────────
+
     public function saveRoadmap(int $userId, array $roadmap): void
     {
-        $dna = $this->getCareerDNA($userId);
-        if (!$dna) {
-            return;
-        }
-
-        $skillsMatrix = $dna['skills_matrix'];
-        // إضافة مفتاح خاص (prototype)
-        $skillsMatrix['_roadmap_prototype'] = $roadmap;
+        $topCareer = (string)($roadmap['_top_career'] ?? '');
+        $slug      = $this->slugify($topCareer) ?: 'general';
 
         $stmt = $this->db->prepare(
-            "
-            UPDATE career_twins
-            SET skills_matrix = :skills_matrix
-            WHERE user_id = :user_id
-            "
+            "INSERT INTO roadmaps (user_id, career_slug, phase_1, phase_2, phase_3)
+             VALUES (:user_id, :career_slug, :phase_1, :phase_2, :phase_3)
+             ON DUPLICATE KEY UPDATE
+               phase_1 = VALUES(phase_1),
+               phase_2 = VALUES(phase_2),
+               phase_3 = VALUES(phase_3)"
         );
 
         $stmt->execute([
-            'skills_matrix' => json_encode($skillsMatrix, JSON_UNESCAPED_UNICODE),
-            'user_id' => $userId,
+            'user_id'     => $userId,
+            'career_slug' => $slug,
+            'phase_1'     => json_encode($roadmap['phase_1'] ?? [], JSON_UNESCAPED_UNICODE),
+            'phase_2'     => json_encode($roadmap['phase_2'] ?? [], JSON_UNESCAPED_UNICODE),
+            'phase_3'     => json_encode($roadmap['phase_3'] ?? [], JSON_UNESCAPED_UNICODE),
         ]);
     }
-}
 
+    public function getRoadmap(int $userId, string $careerSlug): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT phase_1, phase_2, phase_3 FROM roadmaps
+             WHERE user_id = :user_id AND career_slug = :career_slug LIMIT 1'
+        );
+        $stmt->execute(['user_id' => $userId, 'career_slug' => $careerSlug]);
+        $row = $stmt->fetch();
+
+        if (!$row) {
+            return null;
+        }
+
+        return [
+            'phase_1' => json_decode((string)$row['phase_1'], true) ?? [],
+            'phase_2' => json_decode((string)$row['phase_2'], true) ?? [],
+            'phase_3' => json_decode((string)$row['phase_3'], true) ?? [],
+        ];
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    private function slugify(string $text): string
+    {
+        $text = strtolower(trim($text));
+        $text = (string)preg_replace('/[^a-z0-9]+/', '-', $text);
+        return trim($text, '-');
+    }
+}
