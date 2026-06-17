@@ -69,7 +69,11 @@ $router->post('/logout', static function () use ($authCtrl): void {
 // ── Protected UI routes ───────────────────────────────────────────────────────
 
 $router->get('/', static function () use ($guard): void {
-    $guard();
+    // Unauthenticated visitors see the landing page; logged-in users go to wizard
+    if (!Session::isLoggedIn()) {
+        include __DIR__ . '/../views/home/landing.php';
+        return;
+    }
     include __DIR__ . '/../views/assessment/wizard.php';
 });
 

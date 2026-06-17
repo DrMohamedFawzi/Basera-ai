@@ -1,0 +1,129 @@
+/* ═══════════════════════════════════════════════════════
+   Landing page styles
+   All values use the custom "basira" DaisyUI theme tokens
+   where possible; raw oklch() only for hero dark overrides.
+═══════════════════════════════════════════════════════ */
+
+/* ── Page layout ─────────────────────────────────── */
+.landing-hero {
+  background: linear-gradient(
+    135deg,
+    oklch(18% 0.04 260) 0%,
+    oklch(22% 0.06 250) 50%,
+    oklch(16% 0.05 200) 100%
+  );
+}
+
+.section-alt {
+  background: oklch(97% 0.003 247);
+}
+
+/* ── Typography ──────────────────────────────────── */
+.gradient-text {
+  background: linear-gradient(
+    135deg,
+    oklch(55.78% 0.2268 264.05),
+    oklch(56.93% 0.1508 172.89)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero-gradient-text {
+  background: linear-gradient(
+    135deg,
+    oklch(75% 0.18 172),
+    oklch(65% 0.22 264)
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Hero decorative elements ────────────────────── */
+.hero-grid-bg {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='white' stroke-width='0.5' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+.hero-glow-1 {
+  background: radial-gradient(circle, oklch(55.78% 0.2268 264.05), transparent 70%);
+}
+
+.hero-glow-2 {
+  background: radial-gradient(circle, oklch(56.93% 0.1508 172.89), transparent 70%);
+}
+
+/* ── Floating widget animation ───────────────────── */
+.floating {
+  animation: float 4s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-10px); }
+}
+
+/* ── Glow ring around hero card ──────────────────── */
+.glow-ring {
+  box-shadow:
+    0 0 0 1px oklch(55.78% 0.2268 264.05 / 0.2),
+    0 0 0 8px oklch(55.78% 0.2268 264.05 / 0.06),
+    0 0 40px oklch(55.78% 0.2268 264.05 / 0.12);
+}
+
+/* ── Card hover lift ─────────────────────────────── */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 30px oklch(55.78% 0.2268 264.05 / 0.12);
+}
+
+/* ── Step icon ring ──────────────────────────────── */
+.step-icon-ring {
+  box-shadow: 0 0 0 6px oklch(55.78% 0.2268 264.05 / 0.06);
+}
+
+/* ── Navbar scroll state (added via JS) ──────────── */
+.navbar-scrolled {
+  background: oklch(100% 0 0 / 0.98) !important;
+  box-shadow: 0 1px 12px oklch(0% 0 0 / 0.06);
+}
+
+/* ── Intersection-observer reveal ────────────────── */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Hero CTA primary button ─────────────────────── */
+.btn-hero-primary {
+  background: linear-gradient(
+    135deg,
+    oklch(55.78% 0.2268 264.05),
+    oklch(56.93% 0.1508 172.89)
+  );
+  border: none;
+  color: white;
+}
+
+.btn-hero-primary:hover {
+  filter: brightness(1.08);
+}
+
+/* ── Wave separator at hero bottom ──────────────── */
+.wave-fill { fill: oklch(100% 0 0); }
+
+/* ── Stat counter numbers ─────────────────────────  */
+.stat-value {
+  font-variant-numeric: tabular-nums;
+}

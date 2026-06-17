@@ -81,5 +81,6 @@ if ($_appBase === '//') $_appBase = '/';
       border-radius: 99px;
     }
   </style>
+  <?php if (!empty($extraHead)) echo $extraHead; ?>
 </head>
 <body class="<?= htmlspecialchars($bodyClass) ?>">
