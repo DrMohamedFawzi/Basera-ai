@@ -29,21 +29,33 @@ include __DIR__ . '/../layouts/head.php';
       <!-- Feature list -->
       <div class="space-y-4 text-start">
         <div class="flex items-center gap-4 bg-white/10 rounded-xl p-3">
-          <span class="text-2xl">🎯</span>
+          <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 2a10 10 0 100 20A10 10 0 0012 2zm0 0v3m0 14v3M2 12h3m14 0h3"/>
+            </svg>
+          </div>
           <div>
             <div class="font-semibold text-sm">اختبار ميول دقيق</div>
             <div class="text-white/60 text-xs">١٩ سؤالاً مُصمَّماً لكشف مهاراتك</div>
           </div>
         </div>
         <div class="flex items-center gap-4 bg-white/10 rounded-xl p-3">
-          <span class="text-2xl">🧬</span>
+          <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3h6m-3 8v4m-2-2h4"/>
+            </svg>
+          </div>
           <div>
             <div class="font-semibold text-sm">DNA مهني خاص بك</div>
             <div class="text-white/60 text-xs">تحليل عميق لنقاط قوتك</div>
           </div>
         </div>
         <div class="flex items-center gap-4 bg-white/10 rounded-xl p-3">
-          <span class="text-2xl">🗺️</span>
+          <div class="w-9 h-9 bg-white/20 rounded-lg flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-1.447-.894L15 9m0 8V9m0 0L9 7"/>
+            </svg>
+          </div>
           <div>
             <div class="font-semibold text-sm">خارطة طريق مخصصة</div>
             <div class="text-white/60 text-xs">٣ مراحل واضحة للوصول لهدفك</div>
@@ -68,7 +80,7 @@ include __DIR__ . '/../layouts/head.php';
         <h1 class="text-2xl font-bold text-primary">بصيرة AI</h1>
       </div>
 
-      <h2 class="text-2xl font-bold text-base-content mb-1">أهلاً بعودتك 👋</h2>
+      <h2 class="text-2xl font-bold text-base-content mb-1">أهلاً بعودتك</h2>
       <p class="text-base-content/50 text-sm mb-8">سجّل دخولك لمتابعة رحلتك المهنية</p>
 
       <?php if (!empty($_GET['error'])): ?>

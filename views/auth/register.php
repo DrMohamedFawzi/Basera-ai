@@ -59,7 +59,7 @@ include __DIR__ . '/../layouts/head.php';
         <h1 class="text-2xl font-bold text-primary">بصيرة AI</h1>
       </div>
 
-      <h2 class="text-2xl font-bold text-base-content mb-1">أنشئ حسابك 🚀</h2>
+      <h2 class="text-2xl font-bold text-base-content mb-1">أنشئ حسابك</h2>
       <p class="text-base-content/50 text-sm mb-8">ابدأ رحلتك المهنية الآن — مجانًا</p>
 
       <?php if (!empty($_GET['error'])): ?>

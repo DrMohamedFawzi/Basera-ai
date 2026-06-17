@@ -51,7 +51,10 @@ $level = match(true) {
     <?php if (!empty($skills)): ?>
     <!-- ── Skills bars ── -->
     <h3 class="font-semibold text-base mb-4 flex items-center gap-2">
-      <span class="text-lg">🧬</span> محاور المهارات
+      <svg class="w-5 h-5 text-primary shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3h6m-3 8v4m-2-2h4"/>
+      </svg>
+      محاور المهارات
     </h3>
     <div class="space-y-4">
       <?php foreach ($skills as $skill => $lvl): ?>
@@ -93,7 +96,9 @@ $level = match(true) {
     </div>
     <?php else: ?>
     <div class="text-center py-8 text-base-content/40">
-      <div class="text-4xl mb-3">🧬</div>
+      <svg class="w-12 h-12 mb-3 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2h-2M9 3a2 2 0 002 2h2a2 2 0 002-2M9 3h6m-3 8v4m-2-2h4"/>
+      </svg>
       <p class="text-sm">لا توجد بيانات مهارات بعد — أكمل الاختبار أولاً.</p>
     </div>
     <?php endif; ?>
