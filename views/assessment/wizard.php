@@ -188,18 +188,18 @@ include __DIR__ . '/../layouts/head.php';
   }
 
   async function startAssessment() {
-    const data = await apiFetch('index.php/api/assessment/start', { method: 'POST' });
+    const data = await apiFetch(APP_BASE + '/api/assessment/start', { method: 'POST' });
     assessmentId = data.assessment_id;
     setProgress(data.answered_count, data.total_questions);
     return data;
   }
 
   async function fetchNextQuestion() {
-    return apiFetch(`index.php/api/assessment/question/next?assessment_id=${assessmentId}`);
+    return apiFetch(`${APP_BASE}/api/assessment/question/next?assessment_id=${assessmentId}`);
   }
 
   async function saveAnswer() {
-    return apiFetch('index.php/api/assessment/save', {
+    return apiFetch(APP_BASE + '/api/assessment/save', {
       method: 'POST',
       body: JSON.stringify({
         assessment_id: assessmentId,
@@ -225,7 +225,7 @@ include __DIR__ . '/../layouts/head.php';
       const data = await fetchNextQuestion();
 
       if (!data.question) {
-        window.location.href = 'index.php/results';
+        window.location.href = APP_BASE + '/results';
         return;
       }
       showQuestion(data.question, data.total_questions, data.answered_count);
@@ -249,11 +249,11 @@ include __DIR__ . '/../layouts/head.php';
 
       if (!data.question) {
         // finalize
-        await apiFetch('index.php/api/assessment/finalize', {
+        await apiFetch(APP_BASE + '/api/assessment/finalize', {
           method: 'POST',
           body: JSON.stringify({ assessment_id: assessmentId }),
         });
-        window.location.href = 'index.php/results';
+        window.location.href = APP_BASE + '/results';
         return;
       }
 

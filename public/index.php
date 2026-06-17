@@ -31,7 +31,7 @@ $authCtrl           = new AuthController();
 // ── Auth guard (redirect to login if not authenticated) ──────────────────────
 $guard = static function (): void {
     if (!Session::isLoggedIn()) {
-        header('Location: index.php/login');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/login');
         exit;
     }
 };
@@ -40,7 +40,7 @@ $guard = static function (): void {
 
 $router->get('/login', static function () use ($authCtrl): void {
     if (Session::isLoggedIn()) {
-        header('Location: index.php/');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/');
         exit;
     }
     $authCtrl->showLogin();
@@ -52,7 +52,7 @@ $router->post('/login', static function () use ($authCtrl): void {
 
 $router->get('/register', static function () use ($authCtrl): void {
     if (Session::isLoggedIn()) {
-        header('Location: index.php/');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/');
         exit;
     }
     $authCtrl->showRegister();
@@ -111,7 +111,7 @@ $router->get('/api/assessment/restart', static function () use ($guard): void {
         "UPDATE user_assessments SET status='completed', completed_at=NOW()
          WHERE user_id=:user_id AND status='in_progress'"
     )->execute(['user_id' => $userId]);
-    header('Location: index.php/');
+    header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/');
     exit;
 });
 

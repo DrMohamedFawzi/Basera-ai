@@ -1,13 +1,20 @@
 <?php
 $pageTitle ??= 'بصيرة AI';
 $bodyClass ??= 'bg-base-200 min-h-screen';
+
+// Compute app base so that relative links (index.php/X) resolve correctly
+// from any URL depth (e.g. /index.php/login or /subdir/index.php/login).
+$_appBase = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/') . '/';
+if ($_appBase === '//') $_appBase = '/';
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl" data-theme="basira">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <base href="<?= htmlspecialchars($_appBase) ?>">
   <title><?= htmlspecialchars($pageTitle) ?> — بصيرة AI</title>
+  <script>const APP_BASE = <?= json_encode(rtrim($_SERVER['SCRIPT_NAME'] ?? '/index.php', '/')) ?>;</script>
   <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" />
   <script src="https://cdn.tailwindcss.com"></script>
   <style>

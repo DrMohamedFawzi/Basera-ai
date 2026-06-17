@@ -48,7 +48,7 @@ final class AuthController
         Session::set('user_id',   (int)$user['id']);
         Session::set('user_name', (string)$user['name']);
 
-        header('Location: index.php/');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/');
         exit;
     }
 
@@ -99,21 +99,21 @@ final class AuthController
         Session::set('user_id',   $userId);
         Session::set('user_name', $name);
 
-        header('Location: index.php/');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/');
         exit;
     }
 
     public function logout(): void
     {
         Session::destroy();
-        header('Location: index.php/login');
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . '/login');
         exit;
     }
 
     private function redirectWithError(string $page, string $message): void
     {
         $encoded = urlencode($message);
-        header("Location: index.php/{$page}?error={$encoded}");
+        header('Location: ' . $_SERVER['SCRIPT_NAME'] . "/{$page}?error={$encoded}");
         exit;
     }
 }
